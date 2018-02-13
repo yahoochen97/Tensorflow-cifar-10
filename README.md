@@ -10,14 +10,17 @@ The dataset is divided into five training batches and one test batch, each with 
 
 The architecture used in this project for CNN of training is:
 1. 	conv 3x3, 16
+	dropout 50%
 	relu
 	max pool, 3x3, stride=2, SAME
 	batch normalization
 2. 	conv 3x3, 16
+	dropout 50%
 	relu
 	max pool, 3x3, stride=2, SAME
 	batch normalization
 3. 	conv 4x4, 16
+	dropout 50%
 	relu
 	max pool, 3x3, stride=1, SAME
 	batch normalization
@@ -29,5 +32,5 @@ The architecture used in this project for CNN of training is:
 
 
 In this project, training data is batched into size of 256. When the number of batches 
-are chosen to be 10000, the testing accuracy is about 71%. Notice this is a fairly good
+are chosen to be 10,000, the testing accuracy is about 76%. Notice this is a fairly good
 result, compared to 86% testing accuracy but the number of batches are 1,000,000.
