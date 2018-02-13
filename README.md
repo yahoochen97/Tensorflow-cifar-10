@@ -29,5 +29,5 @@ The architecture used in this project for CNN of training is:
 
 
 In this project, training data is batched into size of 256. When the number of batches 
-are chosen to be 5000, the testing accuracy is about 67%. Notice this is a fairly good
+are chosen to be 10000, the testing accuracy is about 71%. Notice this is a fairly good
 result, compared to 86% testing accuracy but the number of batches are 1,000,000.

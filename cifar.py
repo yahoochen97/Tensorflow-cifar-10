@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import pickle
 import os
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer
 
 
@@ -95,8 +96,8 @@ if __name__ == '__main__':
     N1 = 384
     N2 = 192
 
-    WW1 = tf.Variable(tf.truncated_normal([8 * 8 * M, N1], stddev=0.1))
-    bb1 = tf.Variable(tf.ones([N1]) / 10)
+    WW1 = tf.Variable(tf.truncated_normal([8 * 8 * M, N2], stddev=0.1))
+    bb1 = tf.Variable(tf.ones([N2]) / 10)
 
     WW2 = tf.Variable(tf.truncated_normal([N1, N2], stddev=0.1))
     bb2 = tf.Variable(tf.ones([N2]) / 10)
@@ -106,35 +107,53 @@ if __name__ == '__main__':
 
     y1 = tf.nn.relu(tf.nn.conv2d(x, W1, strides=[1, 1, 1, 1], padding='SAME') + b1)
     pool1 = tf.nn.max_pool(y1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
-    batch1 = tf.layers.batch_normalization(pool1, center=True, scale=True, training=True, fused=True)
-    norm1 = tf.nn.lrn(batch1, 4, bias=1.0, alpha=1e-4, beta=0.75)
+    # batch1 = tf.layers.batch_normalization(pool1, center=True, scale=True, training=True, fused=True)
+    norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=1e-4, beta=0.75)
 
     y2 = tf.nn.relu(tf.nn.conv2d(norm1, W2, strides=[1, 1, 1, 1], padding='SAME') + b2)
-    pool2 = tf.nn.max_pool(y2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
-    batch2 = tf.layers.batch_normalization(pool2, center=True, scale=True, training=True, fused=True)
-    norm2 = tf.nn.lrn(batch2, depth_radius=5, bias=1.0, alpha=1e-4, beta=0.75)
+    norm2 = tf.nn.lrn(y2, depth_radius=5, bias=1.0, alpha=1e-4, beta=0.75)
+    pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
+    # batch2 = tf.layers.batch_normalization(pool2, center=True, scale=True, training=True, fused=True)
 
-    y3 = tf.nn.relu(tf.nn.conv2d(norm2, W3, strides=[1, 1, 1, 1], padding='SAME') + b3)
-    pool3 = tf.nn.max_pool(y3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-    batch3 = tf.layers.batch_normalization(pool3, center=True, scale=True, training=True, fused=True)
-    norm3 = tf.nn.lrn(batch3, depth_radius=5, bias=1.0, alpha=1e-4, beta=0.75)
+    # y3 = tf.nn.relu(tf.nn.conv2d(pool2, W3, strides=[1, 1, 1, 1], padding='SAME') + b3)
+    # pool3 = tf.nn.max_pool(y3, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+    # batch3 = tf.layers.batch_normalization(pool3, center=True, scale=True, training=True, fused=True)
+    # norm3 = tf.nn.lrn(batch3, depth_radius=5, bias=1.0, alpha=1e-4, beta=0.75)
 
-    yy = tf.reshape(norm3, shape=[-1, 8 * 8 * M])
+    yy = tf.reshape(pool2, shape=[-1, 8 * 8 * M])
 
     yy1 = tf.nn.relu(tf.matmul(yy, WW1) + bb1)
     bbatch1 = tf.layers.batch_normalization(yy1, center=True, scale=True, training=True, fused=True)
-    yy2 = tf.nn.relu(tf.matmul(bbatch1, WW2) + bb2)
-    bbatch2 = tf.layers.batch_normalization(yy2, center=True, scale=True, training=True, fused=True)
-    y = tf.nn.softmax(tf.matmul(bbatch2, WW3) + bb3)
+    # yy2 = tf.nn.relu(tf.matmul(bbatch1, WW2) + bb2)
+    # bbatch2 = tf.layers.batch_normalization(yy2, center=True, scale=True, training=True, fused=True)
+    y = tf.nn.softmax(tf.matmul(bbatch1, WW3) + bb3)
 
     cross_entropy = -tf.reduce_sum(y_ * tf.log(y))
-    train_step = tf.train.GradientDescentOptimizer(0.0001).minimize(cross_entropy)
+    cross_entropy = tf.reduce_mean(cross_entropy)
+
+    # global_step = tf.Variable(0, trainable=False)
+    # starter_learning_rate = 0.01
+    # lr = tf.train.exponential_decay(starter_learning_rate, global_step, 200, 0.95, staircase=True)
+
+    lr =9e-4
+    train_step = tf.train.GradientDescentOptimizer(lr).minimize(cross_entropy)
 
     sess = tf.InteractiveSession()
     sess.run(tf.global_variables_initializer())
 
-    loop = 5000
-    n = 256
+    loop = 10000
+    n = 128
+
+    # for j in range(train_images.shape[0]):
+    #     if j % 1000 == 0:
+    #         print(j)
+    #
+    #     img = tf.random_crop(train_images[j], size=[32, 32, 3])
+    #     img = tf.image.random_flip_left_right(img)
+    #     img = tf.image.random_hue(img, max_delta=0.05)
+    #     img = tf.image.random_contrast(img, lower=0.3, upper=1.0)
+    #     img = tf.image.random_brightness(img, max_delta=0.2)
+    #     train_images[j] = tf.image.random_saturation(img, lower=0.0, upper=2.0).eval()
 
     for i in range(loop):
         index = [j % num_images_train for j in range(n * i, n * (i + 1))]
